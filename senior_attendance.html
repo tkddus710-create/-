@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>노인복지관 교육프로그램 출결 및 결석 확인 기록장</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Noto Sans KR 폰트 (가독성 높은 한글 폰트) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: white !important;
+        font-size: 12pt;
+      }
+      .card-shadow {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #333 !important;
+        padding: 6px !important;
+        text-align: center;
+      }
+    }
+    .print-only {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+  <!-- 헤더 영역 -->
+  <header class="bg-gradient-to-r from-emerald-700 to-teal-800 text-white shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="bg-emerald-500/30 text-emerald-100 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-300/30">노인복지관 사회복지·평생교육</span>
+            <span class="text-xs text-emerald-200">어르신 안부 확인 & 출결 통합 관리</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 flex items-center gap-3">
+            📋 수강생 출결 및 결석 확인 기록장
+          </h1>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="window.print()" class="bg-white/10 hover:bg-white/20 text-white font-medium px-3.5 py-2 rounded-lg text-sm transition flex items-center gap-1.5 border border-white/20">
+            🖨️ 출석부 인쇄
+          </button>
+          <button onclick="exportToCSV()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-medium px-3.5 py-2 rounded-lg text-sm transition flex items-center gap-1.5 shadow-sm">
+            📥 엑셀(CSV) 저장
+          </button>
+          <button onclick="resetToSampleData()" class="bg-teal-900/60 hover:bg-teal-900 text-teal-100 font-medium px-3 py-2 rounded-lg text-xs transition border border-teal-600/50">
+            🔄 예시 데이터 복원
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 본문 컨테이너 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 상단 1: 프로그램 선택 및 날짜 설정 바 (no-print) -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 no-print">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">교육 프로그램 선택</label>
+          <select id="programSelect" onchange="changeProgram()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <!-- 자바스크립트로 로드됨 -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">출결 일자</label>
+          <input type="date" id="attendanceDate" onchange="changeDate()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">회차 / 차수</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="sessionNumber" min="1" max="100" value="1" onchange="saveSessionInfo()" class="w-24 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-800 text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <span class="text-slate-500 text-sm">회차</span>
+            <button onclick="openProgramModal()" class="ml-auto text-xs text-emerald-700 hover:text-emerald-800 font-semibold underline">
+              + 새 강좌 등록
+            </button>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="setAllAttendance('출석')" class="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2 rounded-lg text-sm transition">
+            ✅ 전원 출석 처리
+          </button>
+          <button onclick="openStudentModal()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
+            + 수강생 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- 선택된 프로그램 세부 정보 칩 -->
+      <div id="programDetailsBadge" class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-600">
+        <!-- 프로그램 정보 로드 -->
+      </div>
+    </section>
+
+    <!-- 인쇄용 타이틀 헤더 (출력 시에만 보임) -->
+    <div class="print-only">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold underline" id="printTitle">노인복지관 교육프로그램 출결 및 결석 확인 기록장</h1>
+        <div class="mt-2 text-sm flex justify-between border-b pb-2">
+          <span id="printProgramInfo">강좌명: </span>
+          <span id="printDateInfo">일시: </span>
+          <span>담당 복지사 확인: ____________ (서명)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상단 2: 실시간 현황 통계 & 안부 확인 알림 카드 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 no-print">
+      <!-- 통계 카드 -->
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+        <h2 class="text-xs font-bold text-slate-500 tracking-wider uppercase mb-3 flex items-center justify-between">
+          <span>오늘의 출결 현황</span>
+          <span class="text-emerald-700 font-normal">실시간 집계</span>
+        </h2>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            <span class="block text-xs text-slate-500">등록 총원</span>
+            <span id="statTotal" class="text-xl font-bold text-slate-800">0</span>
+            <span class="text-[11px] text-slate-400">명</span>
+          </div>
+          <div class="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+            <span class="block text-xs text-emerald-700 font-semibold">출석</span>
+            <span id="statPresent" class="text-xl font-bold text-emerald-700">0</span>
+            <span class="text-[11px] text-emerald-600">명</span>
+          </div>
+          <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+            <span class="block text-xs text-rose-700 font-semibold">결석</span>
+            <span id="statAbsent" class="text-xl font-bold text-rose-700">0</span>
+            <span class="text-[11px] text-rose-600">명</span>
+          </div>
+          <div class="bg-amber-50 p-2.5 rounded-lg border border-amber-100">
+            <span class="block text-xs text-amber-700 font-semibold">병결/지각</span>
+            <span id="statOther" class="text-xl font-bold text-amber-700">0</span>
+            <span class="text-[11px] text-amber-600">명</span>
+          </div>
+        </div>
+        <div class="mt-3 bg-slate-100 rounded-full h-2 overflow-hidden flex">
+          <div id="statRateBar" class="bg-emerald-600 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between items-center text-xs mt-1 text-slate-500">
+          <span>출석률: <strong id="statRateText" class="text-emerald-700">0%</strong></span>
+          <span id="statDateLabel">2026-10-08 기준</span>
+        </div>
+      </section>
+
+      <!-- 복지관 특화: 연속 결석 및 안부 확인 요망 어르신 알림판 -->
+      <section class="lg:col-span-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="flex h-3 w-3 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+            </span>
+            <h2 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+              ⚠️ 안부 확인 집중 관리 대상 (2회 이상 연속 결석 어르신)
+            </h2>
+          </div>
+          <span id="consecutiveCountBadge" class="bg-rose-100 text-rose-800 text-xs px-2.5 py-0.5 rounded-full font-bold">0명 요망</span>
+        </div>
+        <p class="text-xs text-slate-600 mb-3">
+          어르신들의 안전과 건강 관리를 위해 2회 이상 연속 결석 시 유선 안부전화 또는 가정방문 상담을 권장합니다.
+        </p>
+        <div id="consecutiveList" class="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
+          <!-- 연속 결석자 알림 뱃지들이 동적으로 들어감 -->
+        </div>
+      </section>
+    </div>
+
+    <!-- 메인 영역: 수강생 출결 테이블 -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-shadow">
+      
+      <!-- 테이블 상단 검색 & 필터 바 (no-print) -->
+      <div class="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-slate-50/50 no-print">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-slate-800 text-sm">수강생 명단 및 출결 체크</span>
+          <span id="tableCountText" class="text-xs text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded font-medium">총 0명</span>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- 필터 탭 -->
+          <div class="flex bg-slate-200/70 p-0.5 rounded-lg text-xs font-semibold text-slate-700">
+            <button onclick="filterStatus('전체')" id="filter-all" class="px-2.5 py-1 rounded-md bg-white shadow-xs">전체</button>
+            <button onclick="filterStatus('결석')" id="filter-absent" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">결석자만</button>
+            <button onclick="filterStatus('안부필요')" id="filter-check" class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">안부확인 필요</button>
+          </div>
+
+          <!-- 검색창 -->
+          <div class="relative">
+            <input type="text" id="searchInput" oninput="renderTable()" placeholder="이름 또는 연락처 검색" class="bg-white border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-44">
+            <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 출결 테이블 -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+              <th class="py-3 px-3 text-center w-12">연번</th>
+              <th class="py-3 px-4">성명 / 성별</th>
+              <th class="py-3 px-3 text-center">생년월일(연령)</th>
+              <th class="py-3 px-3">연락처 / 비상연락망</th>
+              <th class="py-3 px-4 text-center w-64">출결 상태</th>
+              <th class="py-3 px-4">결석 사유 및 특이사항</th>
+              <th class="py-3 px-3 text-center no-print">안부 확인 여부</th>
+              <th class="py-3 px-3 text-center w-16 no-print">관리</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody" class="divide-y divide-slate-200 text-slate-700">
+            <!-- 자바스크립트로 동적 렌더링 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 빈 목록 상태 -->
+      <div id="emptyState" class="hidden p-12 text-center">
+        <p class="text-4xl mb-2">👵👴</p>
+        <p class="text-slate-500 font-medium">등록된 수강생이 없거나 검색 결과가 없습니다.</p>
+        <p class="text-xs text-slate-400 mt-1">우측 상단의 '+ 수강생 추가' 버튼을 눌러 어르신을 등록해주세요.</p>
+      </div>
+    </section>
+
+    <!-- 하단 도움말 & 사용 팁 -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-600 no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-base">💡</span>
+        <span>
+          <strong>사용 안내:</strong> 모든 출결 및 특이사항 입력 내용은 브라우저에 <strong>자동 저장</strong>됩니다. 
+          2회 이상 연속 결석 시 자동으로 노란색 경고 표시와 안부 확인 안내가 나타납니다.
+        </span>
+      </div>
+      <div class="text-slate-400 text-[11px] whitespace-nowrap">
+        데이터 보관: 브라우저 로컬 저장소 (오프라인 사용 가능)
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= 모달 1: 수강생 등록/수정 모달 ================= -->
+  <div id="studentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b">
+        <h3 id="studentModalTitle" class="text-lg font-bold text-slate-800">새 수강생 등록</h3>
+        <button onclick="closeStudentModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form id="studentForm" onsubmit="handleSaveStudent(event)" class="space-y-3.5">
+        <input type="hidden" id="editStudentId">
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">어르신 성함 <span class="text-rose-500">*</span></label>
+          <input type="text" id="mStudentName" required placeholder="예: 김순자" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">성별</label>
+            <select id="mStudentGender" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="여">여성 (👵)</option>
+              <option value="남">남성 (👴)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">출생년도 / 연령</label>
+            <input type="text" id="mStudentBirth" placeholder="예: 1948년생 (78세)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">어르신 본인 연락처</label>
+          <input type="text" id="mStudentPhone" placeholder="010-0000-0000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">비상연락망 (보호자/자녀 등)</label>
+          <input type="text" id="mStudentEmergency" placeholder="010-1234-5678 (장녀)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">기본 메모 / 건강 참고사항</label>
+          <textarea id="mStudentNote" rows="2" placeholder="예: 무릎 관절염 주의, 보청기 착용, 독거 어르신 등" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeStudentModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 모달 2: 새 강좌 등록 모달 ================= -->
+  <div id="programModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4 pb-2 border-b">
+        <h3 class="text-lg font-bold text-slate-800">새 교육프로그램 등록</h3>
+        <button onclick="closeProgramModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <form onsubmit="handleSaveProgram(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">강좌명 <span class="text-rose-500">*</span></label>
+          <input type="text" id="newProgramName" required placeholder="예: 실버 라인댄스 초급" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">담당 강사</label>
+            <input type="text" id="newProgramInstructor" placeholder="강사 성함" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">담당 복지사</label>
+            <input type="text" id="newProgramWorker" placeholder="사회복지사 성함" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">강의 요일 / 시간</label>
+            <input type="text" id="newProgramSchedule" placeholder="매주 화/목 14:00~15:00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">강의실</label>
+            <input type="text" id="newProgramRoom" placeholder="예: 3층 배움터 1실" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t">
+          <button type="button" onclick="closeProgramModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm">강좌 생성</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 자바스크립트 로직 -->
+  <script>
+    // --- 기본 예시 데이터셋 ---
+    const DEFAULT_DATA = {
+      programs: [
+        {
+          id: "p1",
+          name: "스마트폰 기초 및 키오스크 활용교실",
+          instructor: "이진아 전문강사",
+          worker: "김복지 사회복지사",
+          schedule: "매주 목요일 14:00~15:30",
+          room: "2층 정보화교육실",
+          students: [
+            { id: "s1", name: "박영자", gender: "여", birth: "1946년생 (80세)", phone: "010-3341-8921", emergency: "010-9921-3312 (장남)", note: "보청기 착용" },
+            { id: "s2", name: "김정호", gender: "남", birth: "1949년생 (77세)", phone: "010-5512-4412", emergency: "010-8812-4412 (배우자)", note: "독거 어르신, 혈압 주의" },
+            { id: "s3", name: "이순덕", gender: "여", birth: "1944년생 (82세)", phone: "010-7711-2290", emergency: "010-3312-9900 (딸)", note: "무릎 수술 이력" },
+            { id: "s4", name: "최봉수", gender: "남", birth: "1951년생 (75세)", phone: "010-4411-9988", emergency: "010-6622-1133 (아들)", note: "" },
+            { id: "s5", name: "정말순", gender: "여", birth: "1947년생 (79세)", phone: "010-8822-7711", emergency: "010-2211-5544 (차녀)", note: "안경 미지참 시 글씨 확대 필요" },
+            { id: "s6", name: "강태식", gender: "남", birth: "1948년생 (78세)", phone: "010-1290-4411", emergency: "010-9933-2211 (배우자)", note: "" },
+            { id: "s7", name: "조옥분", gender: "여", birth: "1943년생 (83세)", phone: "010-6677-3311", emergency: "010-4455-8899 (며느리)", note: "지팡이 이용" }
+          ],
+          // 날짜별 출결 기록 (key: YYYY-MM-DD)
+          records: {
+            "2026-10-01": {
+              session: 1,
+              attendances: {
+                "s1": { status: "출석", reason: "", checkedWelfare: false },
+                "s2": { status: "결석", reason: "보건소 진료", checkedWelfare: true },
+                "s3": { status: "출석", reason: "", checkedWelfare: false },
+                "s4": { status: "결석", reason: "연락 두절 (미응답)", checkedWelfare: false },
+                "s5": { status: "출석", reason: "", checkedWelfare: false },
+                "s6": { status: "출석", reason: "", checkedWelfare: false },
+                "s7": { status: "출석", reason: "", checkedWelfare: false }
+              }
+            },
+            "2026-10-08": {
+              session: 2,
+              attendances: {
+                "s1": { status: "출석", reason: "", checkedWelfare: false },
+                "s2": { status: "결석", reason: "감기 기운으로 자택 휴식", checkedWelfare: true },
+                "s3": { status: "출석", reason: "", checkedWelfare: false },
+                "s4": { status: "결석", reason: "전화 연결 안 됨 (안부 확인 필요)", checkedWelfare: false },
+                "s5": { status: "병결", reason: "정형외과 물리치료", checkedWelfare: true },
+                "s6": { status: "출석", reason: "", checkedWelfare: false },
+                "s7": { status: "지각", reason: "복지관 셔틀버스 지연", checkedWelfare: false }
+              }
+            }
+          }
+        },
+        {
+          id: "p2",
+          name: "활력충전 실버 건강체조교실",
+          instructor: "박민우 지도사",
+          worker: "이지원 사회복지사",
+          schedule: "매주 화/금 10:00~11:00",
+          room: "1층 대강당",
+          students: [
+            { id: "s201", name: "오영순", gender: "여", birth: "1945년생 (81세)", phone: "010-9123-4567", emergency: "010-2345-6789 (아들)", note: "" },
+            { id: "s202", name: "황규철", gender: "남", birth: "1950년생 (76세)", phone: "010-8234-5678", emergency: "010-3456-7890 (배우자)", note: "" }
+          ],
+          records: {}
+        }
+      ]
+    };
+
+    // --- 상태 관리 ---
+    const STORAGE_KEY = "senior_center_attendance_v1";
+    let appData = null;
+    let currentProgramId = "";
+    let currentDate = "";
+    let currentFilter = "전체";
+
+    // 초기화
+    function initApp() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          appData = JSON.parse(saved);
+        } catch (e) {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+      }
+
+      // 오늘 날짜 설정 (2026-10-08 또는 실제 오늘 날짜)
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+      
+      currentDate = "2026-10-08"; // 과제 기준일
+      document.getElementById("attendanceDate").value = currentDate;
+
+      renderProgramOptions();
+      if (appData.programs.length > 0) {
+        currentProgramId = appData.programs[0].id;
+        document.getElementById("programSelect").value = currentProgramId;
+      }
+      
+      loadSession();
+      renderAll();
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function resetToSampleData() {
+      if (confirm("예시 데이터로 초기화하시겠습니까? 현재 입력된 기록이 초기화됩니다.")) {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+        initApp();
+      }
+    }
+
+    function getCurProgram() {
+      return appData.programs.find(p => p.id === currentProgramId);
+    }
+
+    function getCurDayRecord() {
+      const prog = getCurProgram();
+      if (!prog) return null;
+      if (!prog.records) prog.records = {};
+      if (!prog.records[currentDate]) {
+        prog.records[currentDate] = {
+          session: 1,
+          attendances: {}
+        };
+      }
+      return prog.records[currentDate];
+    }
+
+    // --- 렌더링 함수들 ---
+    function renderProgramOptions() {
+      const select = document.getElementById("programSelect");
+      select.innerHTML = appData.programs.map(p => `
+        <option value="${p.id}">${p.name} (${p.schedule})</option>
+      `).join('');
+    }
+
+    function changeProgram() {
+      currentProgramId = document.getElementById("programSelect").value;
+      loadSession();
+      renderAll();
+    }
+
+    function changeDate() {
+      currentDate = document.getElementById("attendanceDate").value;
+      loadSession();
+      renderAll();
+    }
+
+    function loadSession() {
+      const rec = getCurDayRecord();
+      if (rec) {
+        document.getElementById("sessionNumber").value = rec.session || 1;
+      }
+    }
+
+    function saveSessionInfo() {
+      const rec = getCurDayRecord();
+      if (rec) {
+        rec.session = parseInt(document.getElementById("sessionNumber").value, 10) || 1;
+        saveData();
+        renderAll();
+      }
+    }
+
+    // 전체 화면 재렌더링
+    function renderAll() {
+      renderProgramInfoBadge();
+      renderStatsAndAlerts();
+      renderTable();
+      updatePrintView();
+    }
+
+    function renderProgramInfoBadge() {
+      const prog = getCurProgram();
+      if (!prog) return;
+      const el = document.getElementById("programDetailsBadge");
+      el.innerHTML = `
+        <span><strong>강사:</strong> ${prog.instructor || '미지정'}</span>
+        <span><strong>담당 복지사:</strong> ${prog.worker || '미지정'}</span>
+        <span><strong>강의 장소:</strong> ${prog.room || '복지관 배움터'}</span>
+        <span><strong>일정:</strong> ${prog.schedule}</span>
+        <span><strong>등록 정원:</strong> ${prog.students ? prog.students.length : 0}명</span>
+      `;
+    }
+
+    // 연속 결석 일수 계산
+    function calculateConsecutiveAbsences(prog, studentId) {
+      if (!prog || !prog.records) return 0;
+      // 날짜 순 정렬 (오름차순)
+      const sortedDates = Object.keys(prog.records).sort();
+      const curIndex = sortedDates.indexOf(currentDate);
+      if (curIndex === -1) return 0;
+
+      let consecutive = 0;
+      // 오늘부터 과거로 거슬러 올라감
+      for (let i = curIndex; i >= 0; i--) {
+        const d = sortedDates[i];
+        const dayAtt = prog.records[d]?.attendances?.[studentId]?.status;
+        if (dayAtt === "결석") {
+          consecutive++;
+        } else if (dayAtt === "출석" || dayAtt === "지각") {
+          break;
+        } else if (dayAtt === "병결") {
+          // 병결도 결석 카운트에 포함할지 여부: 연속 결석 위험도에서는 사유 확인되었으므로 결석 카운트로 세되 표시
+          consecutive++;
+        } else {
+          // 미입력인 경우
+          break;
+        }
+      }
+      return consecutive;
+    }
+
+    // 통계 및 연속 결석 알림판 렌더링
+    function renderStatsAndAlerts() {
+      const prog = getCurProgram();
+      if (!prog) return;
+
+      const rec = getCurDayRecord();
+      const students = prog.students || [];
+      const total = students.length;
+
+      let presentCount = 0;
+      let absentCount = 0;
+      let otherCount = 0;
+
+      const consecutiveList = [];
+
+      students.forEach(st => {
+        const att = rec.attendances[st.id]?.status;
+        if (att === "출석") presentCount++;
+        else if (att === "결석") absentCount++;
+        else if (att === "병결" || att === "지각") otherCount++;
+
+        const cons = calculateConsecutiveAbsences(prog, st.id);
+        if (cons >= 2) {
+          consecutiveList.push({
+            student: st,
+            count: cons,
+            checked: rec.attendances[st.id]?.checkedWelfare || false,
+            reason: rec.attendances[st.id]?.reason || "사유 미확인"
+          });
+        }
+      });
+
+      // 통계 UI 업데이트
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statPresent").textContent = presentCount;
+      document.getElementById("statAbsent").textContent = absentCount;
+      document.getElementById("statOther").textContent = otherCount;
+
+      const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+      document.getElementById("statRateBar").style.width = `${rate}%`;
+      document.getElementById("statRateText").textContent = `${rate}%`;
+      document.getElementById("statDateLabel").textContent = `${currentDate} (${rec.session || 1}회차)`;
+
+      // 연속 결석자 알림 뱃지 렌더링
+      const badgeContainer = document.getElementById("consecutiveList");
+      const countBadge = document.getElementById("consecutiveCountBadge");
+      countBadge.textContent = `${consecutiveList.length}명 요망`;
+
+      if (consecutiveList.length === 0) {
+        badgeContainer.innerHTML = `<span class="text-xs text-slate-500 italic">현재 2회 이상 연속 결석한 어르신이 없습니다. (건강한 출석 유지 중 🎉)</span>`;
+      } else {
+        badgeContainer.innerHTML = consecutiveList.map(item => `
+          <div class="bg-white border ${item.checked ? 'border-emerald-300 bg-emerald-50/50' : 'border-rose-300'} px-3 py-1.5 rounded-lg shadow-2xs flex items-center gap-2 text-xs">
+            <span class="font-bold text-slate-800">${item.student.name} 어르신</span>
+            <span class="bg-rose-500 text-white font-black text-[10px] px-1.5 py-0.5 rounded">${item.count}회 연속 결석</span>
+            <span class="text-slate-500 text-[11px] truncate max-w-[150px]" title="${item.reason}">사유: ${item.reason}</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-slate-600 text-[11px]">보호자: ${item.student.emergency || item.student.phone || '연락처 없음'}</span>
+            ${item.checked 
+              ? `<span class="text-emerald-700 font-bold text-[11px] bg-emerald-100 px-1 rounded">📞 안부완료</span>`
+              : `<span class="text-rose-600 font-bold text-[11px] bg-rose-100 px-1 rounded animate-pulse">📞 안부요망!</span>`
+            }
+          </div>
+        `).join('');
+      }
+    }
+
+    // 출결 테이블 렌더링
+    function renderTable() {
+      const prog = getCurProgram();
+      if (!prog) return;
+
+      const rec = getCurDayRecord();
+      const search = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+      const tbody = document.getElementById("studentTableBody");
+      const emptyState = document.getElementById("emptyState");
+
+      let list = prog.students || [];
+
+      // 검색 필터
+      if (search) {
+        list = list.filter(s => 
+          s.name.toLowerCase().includes(search) || 
+          (s.phone && s.phone.includes(search)) ||
+          (s.emergency && s.emergency.includes(search))
+        );
+      }
+
+      // 상태 필터 (전체, 결석자만, 안부필요)
+      if (currentFilter === "결석") {
+        list = list.filter(s => {
+          const status = rec.attendances[s.id]?.status;
+          return status === "결석" || status === "병결";
+        });
+      } else if (currentFilter === "안부필요") {
+        list = list.filter(s => {
+          const cons = calculateConsecutiveAbsences(prog, s.id);
+          const att = rec.attendances[s.id];
+          return (cons >= 2 && (!att || !att.checkedWelfare)) || att?.status === "결석";
+        });
+      }
+
+      document.getElementById("tableCountText").textContent = `총 ${list.length}명`;
+
+      if (list.length === 0) {
+        tbody.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+      emptyState.classList.add("hidden");
+
+      tbody.innerHTML = list.map((st, idx) => {
+        const attData = rec.attendances[st.id] || { status: "출석", reason: "", checkedWelfare: false };
+        const status = attData.status || "미체크";
+        const reason = attData.reason || "";
+        const checkedWelfare = !!attData.checkedWelfare;
+        const consAbsences = calculateConsecutiveAbsences(prog, st.id);
+
+        const isConsecutiveAlert = consAbsences >= 2;
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition-colors ${isConsecutiveAlert ? 'bg-amber-50/40' : ''}">
+            <!-- 연번 -->
+            <td class="py-3 px-3 text-center text-xs font-semibold text-slate-500">${idx + 1}</td>
+
+            <!-- 성명 / 성별 -->
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-sm">${st.name}</span>
+                <span class="text-xs px-1.5 py-0.5 rounded ${st.gender === '여' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'} font-medium">
+                  ${st.gender || '미지정'}
+                </span>
+                ${isConsecutiveAlert ? `
+                  <span class="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-2xs" title="${consAbsences}회 연속 결석">
+                    ${consAbsences}회연속⚠️
+                  </span>
+                ` : ''}
+              </div>
+              ${st.note ? `<div class="text-[11px] text-amber-700 mt-0.5 font-normal">📝 ${st.note}</div>` : ''}
+            </td>
+
+            <!-- 생년월일 / 연령 -->
+            <td class="py-3 px-3 text-center text-xs text-slate-600 whitespace-nowrap">
+              ${st.birth || '-'}
+            </td>
+
+            <!-- 연락처 & 비상연락처 -->
+            <td class="py-3 px-3 text-xs">
+              <div class="font-medium text-slate-800">${st.phone || '-'}</div>
+              <div class="text-[11px] text-slate-500 mt-0.5">비상: ${st.emergency || '-'}</div>
+            </td>
+
+            <!-- 출결 상태 버튼 그룹 -->
+            <td class="py-3 px-4 text-center">
+              <div class="inline-flex rounded-lg shadow-2xs border border-slate-200 overflow-hidden text-xs">
+                <button onclick="updateAttendance('${st.id}', '출석')" class="px-2.5 py-1.5 font-bold transition ${status === '출석' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+                  출석
+                </button>
+                <button onclick="updateAttendance('${st.id}', '결석')" class="px-2.5 py-1.5 font-bold transition border-l border-slate-200 ${status === '결석' ? 'bg-rose-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+                  결석
+                </button>
+                <button onclick="updateAttendance('${st.id}', '병결')" class="px-2.5 py-1.5 font-bold transition border-l border-slate-200 ${status === '병결' ? 'bg-amber-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+                  병결
+                </button>
+                <button onclick="updateAttendance('${st.id}', '지각')" class="px-2.5 py-1.5 font-bold transition border-l border-slate-200 ${status === '지각' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}">
+                  지각
+                </button>
+              </div>
+            </td>
+
+            <!-- 결석 사유 및 특이사항 입력창 -->
+            <td class="py-3 px-4">
+              <div class="relative">
+                <input type="text" 
+                  value="${reason.replace(/"/g, '&quot;')}" 
+                  onchange="updateReason('${st.id}', this.value)"
+                  placeholder="${status === '출석' ? '특이사항 있을 시 입력' : '결석 사유 입력 (예: 병원진료, 감기)'}"
+                  class="w-full text-xs border ${status === '결석' || status === '병결' ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200 bg-white'} rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              </div>
+            </td>
+
+            <!-- 안부 확인 여부 체크 (결석자 집중) -->
+            <td class="py-3 px-3 text-center no-print">
+              <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" 
+                  ${checkedWelfare ? 'checked' : ''} 
+                  onchange="updateWelfareCheck('${st.id}', this.checked)"
+                  class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer">
+                <span class="text-xs ${checkedWelfare ? 'text-emerald-700 font-bold' : 'text-slate-400'}">
+                  ${checkedWelfare ? '확인완료' : '미확인'}
+                </span>
+              </label>
+            </td>
+
+            <!-- 수강생 수정 / 삭제 관리 버튼 -->
+            <td class="py-3 px-3 text-center no-print">
+              <div class="flex items-center justify-center gap-1">
+                <button onclick="openStudentModal('${st.id}')" title="수정" class="text-slate-400 hover:text-slate-700 text-xs p-1">✏️</button>
+                <button onclick="deleteStudent('${st.id}')" title="삭제" class="text-slate-400 hover:text-rose-600 text-xs p-1">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- 출결 업데이트 동작 ---
+    function updateAttendance(studentId, newStatus) {
+      const rec = getCurDayRecord();
+      if (!rec.attendances[studentId]) {
+        rec.attendances[studentId] = { status: newStatus, reason: "", checkedWelfare: false };
+      } else {
+        rec.attendances[studentId].status = newStatus;
+      }
+      saveData();
+      renderAll();
+    }
+
+    function updateReason(studentId, newReason) {
+      const rec = getCurDayRecord();
+      if (!rec.attendances[studentId]) {
+        rec.attendances[studentId] = { status: "출석", reason: newReason, checkedWelfare: false };
+      } else {
+        rec.attendances[studentId].reason = newReason;
+      }
+      saveData();
+      renderStatsAndAlerts(); // 뱃지 사유 갱신
+    }
+
+    function updateWelfareCheck(studentId, isChecked) {
+      const rec = getCurDayRecord();
+      if (!rec.attendances[studentId]) {
+        rec.attendances[studentId] = { status: "출석", reason: "", checkedWelfare: isChecked };
+      } else {
+        rec.attendances[studentId].checkedWelfare = isChecked;
+      }
+      saveData();
+      renderAll();
+    }
+
+    function setAllAttendance(status) {
+      const prog = getCurProgram();
+      if (!prog) return;
+      const rec = getCurDayRecord();
+      
+      (prog.students || []).forEach(st => {
+        if (!rec.attendances[st.id]) {
+          rec.attendances[st.id] = { status: status, reason: "", checkedWelfare: false };
+        } else {
+          rec.attendances[st.id].status = status;
+        }
+      });
+      saveData();
+      renderAll();
+    }
+
+    function filterStatus(type) {
+      currentFilter = type;
+      document.getElementById("filter-all").className = type === '전체' ? "px-2.5 py-1 rounded-md bg-white shadow-xs font-bold" : "px-2.5 py-1 rounded-md text-slate-600";
+      document.getElementById("filter-absent").className = type === '결석' ? "px-2.5 py-1 rounded-md bg-white shadow-xs font-bold text-rose-700" : "px-2.5 py-1 rounded-md text-slate-600";
+      document.getElementById("filter-check").className = type === '안부필요' ? "px-2.5 py-1 rounded-md bg-white shadow-xs font-bold text-amber-700" : "px-2.5 py-1 rounded-md text-slate-600";
+      renderTable();
+    }
+
+    // --- 수강생 모달 관리 ---
+    function openStudentModal(id = null) {
+      const modal = document.getElementById("studentModal");
+      const title = document.getElementById("studentModalTitle");
+      const form = document.getElementById("studentForm");
+      form.reset();
+
+      if (id) {
+        title.textContent = "수강생 정보 수정";
+        document.getElementById("editStudentId").value = id;
+        const prog = getCurProgram();
+        const st = prog.students.find(s => s.id === id);
+        if (st) {
+          document.getElementById("mStudentName").value = st.name || "";
+          document.getElementById("mStudentGender").value = st.gender || "여";
+          document.getElementById("mStudentBirth").value = st.birth || "";
+          document.getElementById("mStudentPhone").value = st.phone || "";
+          document.getElementById("mStudentEmergency").value = st.emergency || "";
+          document.getElementById("mStudentNote").value = st.note || "";
+        }
+      } else {
+        title.textContent = "새 수강생 등록";
+        document.getElementById("editStudentId").value = "";
+      }
+      modal.classList.remove("hidden");
+    }
+
+    function closeStudentModal() {
+      document.getElementById("studentModal").classList.add("hidden");
+    }
+
+    function handleSaveStudent(e) {
+      e.preventDefault();
+      const prog = getCurProgram();
+      if (!prog) return;
+
+      const id = document.getElementById("editStudentId").value;
+      const studentData = {
+        name: document.getElementById("mStudentName").value.trim(),
+        gender: document.getElementById("mStudentGender").value,
+        birth: document.getElementById("mStudentBirth").value.trim(),
+        phone: document.getElementById("mStudentPhone").value.trim(),
+        emergency: document.getElementById("mStudentEmergency").value.trim(),
+        note: document.getElementById("mStudentNote").value.trim()
+      };
+
+      if (id) {
+        // 수정
+        const idx = prog.students.findIndex(s => s.id === id);
+        if (idx !== -1) {
+          prog.students[idx] = { ...prog.students[idx], ...studentData };
+        }
+      } else {
+        // 신규 등록
+        const newId = "s_" + Date.now();
+        prog.students.push({ id: newId, ...studentData });
+      }
+
+      saveData();
+      closeStudentModal();
+      renderAll();
+    }
+
+    function deleteStudent(id) {
+      const prog = getCurProgram();
+      if (!prog) return;
+      const st = prog.students.find(s => s.id === id);
+      if (!st) return;
+
+      if (confirm(`'${st.name}' 어르신을 수강생 명단에서 삭제하시겠습니까?`)) {
+        prog.students = prog.students.filter(s => s.id !== id);
+        saveData();
+        renderAll();
+      }
+    }
+
+    // --- 강좌 모달 관리 ---
+    function openProgramModal() {
+      document.getElementById("programModal").classList.remove("hidden");
+    }
+
+    function closeProgramModal() {
+      document.getElementById("programModal").classList.add("hidden");
+    }
+
+    function handleSaveProgram(e) {
+      e.preventDefault();
+      const newProg = {
+        id: "p_" + Date.now(),
+        name: document.getElementById("newProgramName").value.trim(),
+        instructor: document.getElementById("newProgramInstructor").value.trim(),
+        worker: document.getElementById("newProgramWorker").value.trim(),
+        schedule: document.getElementById("newProgramSchedule").value.trim(),
+        room: document.getElementById("newProgramRoom").value.trim(),
+        students: [],
+        records: {}
+      };
+
+      appData.programs.push(newProg);
+      currentProgramId = newProg.id;
+      saveData();
+      renderProgramOptions();
+      document.getElementById("programSelect").value = currentProgramId;
+      closeProgramModal();
+      renderAll();
+    }
+
+    // --- 인쇄 및 출력 최적화 ---
+    function updatePrintView() {
+      const prog = getCurProgram();
+      if (!prog) return;
+      const rec = getCurDayRecord();
+
+      document.getElementById("printTitle").textContent = `${prog.name} [제${rec.session || 1}회차 출결 및 결석 확인부]`;
+      document.getElementById("printProgramInfo").textContent = `강좌명: ${prog.name} (${prog.schedule}) | 강사: ${prog.instructor || '-'} | 복지사: ${prog.worker || '-'}`;
+      document.getElementById("printDateInfo").textContent = `출결 일자: ${currentDate}`;
+    }
+
+    // --- 엑셀 (CSV) 내보내기 ---
+    function exportToCSV() {
+      const prog = getCurProgram();
+      if (!prog) return;
+      const rec = getCurDayRecord();
+      const students = prog.students || [];
+
+      let csv = "\uFEFF"; // 한글 깨짐 방지 BOM (UTF-8)
+      csv += `강좌명,${prog.name}\n`;
+      csv += `일시,${currentDate} (제${rec.session || 1}회차)\n`;
+      csv += `담당 강사,${prog.instructor || ''},담당 복지사,${prog.worker || ''}\n\n`;
+      csv += `연번,성명,성별,생년월일(연령),연락처,비상연락망,출결상태,결석사유 및 특이사항,안부확인여부\n`;
+
+      students.forEach((st, idx) => {
+        const att = rec.attendances[st.id] || { status: "출석", reason: "", checkedWelfare: false };
+        const row = [
+          idx + 1,
+          `"${st.name}"`,
+          `"${st.gender || ''}"`,
+          `"${st.birth || ''}"`,
+          `"${st.phone || ''}"`,
+          `"${st.emergency || ''}"`,
+          `"${att.status || ''}"`,
+          `"${(att.reason || '').replace(/"/g, '""')}"`,
+          att.checkedWelfare ? "확인완료" : "미확인"
+        ];
+        csv += row.join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `${prog.name}_출결기록부_${currentDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // 앱 실행
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
